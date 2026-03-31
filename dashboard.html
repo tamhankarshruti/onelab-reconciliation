@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reconciliation Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --border: #d0dae6;
+    --border-soft: #e4ecf4;
+    --text-primary: #0f2d52;
+    --text-secondary: #4a6080;
+    --text-muted: #8ba0b8;
+    --accent: #1a6fc4;
+    --accent-light: #e8f2fb;
+    --accent-text: #14589e;
+    --green: #059669;
+    --green-light: #ecfdf5;
+    --green-text: #047857;
+    --amber: #d97706;
+    --amber-light: #fffbeb;
+    --amber-text: #b45309;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --red-text: #b91c1c;
+    --indigo: #4f46e5;
+    --indigo-light: #eef2ff;
+    --indigo-text: #4338ca;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* Top bar */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 28px; height: 28px;
+    background: var(--text-primary);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .brand-mark svg { width: 14px; height: 14px; }
+  .brand-name { font-weight: 600; font-size: 14px; letter-spacing: -0.01em; }
+  .brand-sep  { color: var(--border); margin: 0 2px; }
+  .brand-sub  { font-size: 13px; color: var(--text-secondary); font-weight: 400; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .period-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    letter-spacing: 0.04em;
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
+  .status-dot.live { background: var(--green); }
+
+  /* Upload bar */
+  .upload-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .upload-group { display: flex; flex-direction: column; gap: 3px; }
+  .upload-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  input[type=file] {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 8px;
+    cursor: pointer;
+    outline: none;
+    transition: border 0.15s;
+  }
+  input[type=file]:hover { border-color: #b0b8c8; }
+  input[type=file]::-webkit-file-upload-button {
+    background: var(--surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 10px;
+    cursor: pointer;
+    margin-right: 6px;
+  }
+  .btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+  .btn-primary { background: var(--text-primary); color: #fff; }
+  .btn-primary:hover { background: #1e293b; }
+  .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg); border-color: #b0b8c8; color: var(--text-primary); }
+
+  /* Main */
+  main { padding: 1.75rem 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 10px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    transition: border-color 0.15s;
+  }
+  .stat:hover { border-color: #c0c8d4; }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--text-primary);
+  }
+  .stat-value.green  { color: var(--green); }
+  .stat-value.amber  { color: var(--amber); }
+  .stat-value.red    { color: var(--red); }
+  .stat-value.blue   { color: var(--accent); }
+  .stat-value.indigo { color: var(--indigo); }
+  .stat-caption { font-size: 11px; color: var(--text-muted); }
+  .stat-bar { height: 2px; border-radius: 1px; background: var(--border-soft); margin-top: 4px; overflow: hidden; }
+  .stat-bar-fill { height: 100%; border-radius: 1px; }
+
+  /* Totals */
+  .totals-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .total-block { flex: 1; min-width: 140px; padding: 0 20px; border-right: 1px solid var(--border-soft); }
+  .total-block:first-child { padding-left: 0; }
+  .total-block:last-child  { border-right: none; }
+  .total-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .total-value { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .diff-badge {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 4px;
+  }
+  .diff-badge.bad  { background: var(--red-light);   color: var(--red-text); }
+  .diff-badge.good { background: var(--green-light); color: var(--green-text); }
+
+  /* Section */
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .section-title { font-size: 13px; font-weight: 500; letter-spacing: -0.01em; }
+  .section-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    white-space: nowrap;
+    font-weight: 400;
+  }
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 12px;
+    vertical-align: middle;
+    color: var(--text-secondary);
+  }
+  tbody td.mono { font-family: var(--mono); font-size: 11px; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #fafbfc; }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .badge-blue   { background: var(--accent-light); color: var(--accent-text); }
+  .badge-amber  { background: var(--amber-light);  color: var(--amber-text); }
+  .badge-red    { background: var(--red-light);    color: var(--red-text); }
+  .badge-indigo { background: var(--indigo-light); color: var(--indigo-text); }
+  .badge-gray   { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+
+  /* Assumptions */
+  .assumptions {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--text-primary);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+  }
+  .assumptions-title {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    margin-bottom: 8px;
+  }
+  .assumptions ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .assumptions li { font-size: 12px; color: var(--text-secondary); display: flex; gap: 8px; }
+  .assumptions li::before { content: '—'; color: var(--text-muted); flex-shrink: 0; }
+
+  /* Empty */
+  .empty {
+    padding: 3rem 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .empty-icon {
+    width: 36px; height: 36px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 4px;
+  }
+  .hidden { display: none !important; }
+  .divider { width: 1px; height: 40px; background: var(--border); flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 14 14" fill="none">
+        <rect x="1" y="1" width="5" height="5" rx="1" fill="white"/>
+        <rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.5"/>
+        <rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.5"/>
+        <rect x="8" y="8" width="5" height="5" rx="1" fill="white"/>
+      </svg>
+    </div>
+    <span class="brand-name">Onelab</span>
+    <span class="brand-sep">/</span>
+    <span class="brand-sub">Reconciliation Engine</span>
+  </div>
+  <div class="topbar-right">
+    <span class="period-tag" id="periodTag">NO PERIOD</span>
+    <div class="status-dot" id="statusDot"></div>
+  </div>
+</div>
+
+<div class="upload-bar">
+  <div class="upload-group">
+    <span class="upload-label">Transactions</span>
+    <input type="file" id="txnFile" accept=".csv">
+  </div>
+  <div class="upload-group">
+    <span class="upload-label">Settlements</span>
+    <input type="file" id="setFile" accept=".csv">
+  </div>
+  <button class="btn btn-primary" onclick="runFromFiles()">Run reconciliation</button>
+  <button class="btn btn-ghost" onclick="loadDemo()">Load demo data</button>
+</div>
+
+<main>
+  <div class="empty" id="emptyState">
+    <div class="empty-icon">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M2 4h12M2 8h8M2 12h5" stroke="var(--border)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span>Upload transaction and settlement CSVs, or load demo data to begin.</span>
+  </div>
+
+  <div class="stats-grid hidden" id="statsGrid"></div>
+  <div class="totals-row hidden" id="totalsRow"></div>
+
+  <div class="hidden" id="tableSection">
+    <div class="section-head">
+      <span class="section-title">Gap details</span>
+      <span class="section-count" id="issueCount">0 issues</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:36px">#</th>
+            <th>Gap type</th>
+            <th>Transaction ID</th>
+            <th>Txn amount</th>
+            <th>Settled amount</th>
+            <th>Detail</th>
+          </tr>
+        </thead>
+        <tbody id="issuesBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="assumptions hidden" id="assumptionsBox"></div>
+</main>
+
+<script>
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').trim());
+    return obj;
+  });
+}
+
+const MONTH = '2025-03', NEXT_MONTH = '2025-04', ROUNDING = 0.10;
+
+function reconcile(txns, sets) {
+  const issues = [];
+  const summary = { total_transactions: txns.length, total_settlements: sets.length,
+    matched: 0, next_month_settlement: 0, rounding_differences: 0,
+    duplicate_settlements: 0, phantom_refunds: 0 };
+  const txnById = {};
+  txns.forEach(t => { t.amount = parseFloat(t.amount); txnById[t.transaction_id] = t; });
+  sets.forEach(s => { s.settled_amount = parseFloat(s.settled_amount); });
+  const setByTxn = {};
+  sets.forEach(s => { if (!setByTxn[s.transaction_id]) setByTxn[s.transaction_id] = []; setByTxn[s.transaction_id].push(s); });
+  const txnIds = new Set(Object.keys(txnById));
+  const settledIds = new Set(Object.keys(setByTxn));
+
+  for (const [tid, ss] of Object.entries(setByTxn)) {
+    if (ss.length > 1 && txnIds.has(tid)) {
+      summary.duplicate_settlements++;
+      issues.push({ gap_type: 'DUPLICATE_SETTLEMENT', transaction_id: tid,
+        txn_amount: txnById[tid].amount, settled_amount: ss[0].settled_amount,
+        detail: `${ss.length} settlement entries for same TXN` });
+    }
+  }
+  settledIds.forEach(tid => {
+    if (!txnIds.has(tid)) {
+      setByTxn[tid].forEach(s => {
+        if (s.settled_amount < 0 || s.status === 'refund') {
+          summary.phantom_refunds++;
+          issues.push({ gap_type: 'PHANTOM_REFUND', transaction_id: tid,
+            txn_amount: null, settled_amount: s.settled_amount,
+            detail: 'Refund with no matching original transaction' });
+        }
+      });
+    }
+  });
+  for (const [tid, txn] of Object.entries(txnById)) {
+    const ss = setByTxn[tid];
+    if (!ss || ss.length === 0) {
+      const ts = new Date(txn.timestamp);
+      if (ts.getDate() >= 29 || (txn.note && txn.note.includes('GAP1'))) {
+        summary.next_month_settlement++;
+        issues.push({ gap_type: 'NEXT_MONTH_SETTLEMENT', transaction_id: tid,
+          txn_amount: txn.amount, settled_amount: null,
+          detail: 'No March settlement — likely settled in April' });
+      } else {
+        issues.push({ gap_type: 'MISSING_SETTLEMENT', transaction_id: tid,
+          txn_amount: txn.amount, settled_amount: null, detail: 'No settlement found' });
+      }
+      continue;
+    }
+    const primary = ss[0];
+    const diff = Math.abs(txn.amount - primary.settled_amount);
+    if (diff > 0 && diff <= ROUNDING) {
+      summary.rounding_differences++;
+      issues.push({ gap_type: 'ROUNDING_DIFFERENCE', transaction_id: tid,
+        txn_amount: txn.amount, settled_amount: primary.settled_amount,
+        detail: `Difference ₹${diff.toFixed(4)} — rounding` });
+      continue;
+    }
+    if (primary.settlement_date && primary.settlement_date.startsWith(NEXT_MONTH)) {
+      summary.next_month_settlement++;
+      issues.push({ gap_type: 'NEXT_MONTH_SETTLEMENT', transaction_id: tid,
+        txn_amount: txn.amount, settled_amount: primary.settled_amount,
+        detail: `Settled on ${primary.settlement_date} (April)` });
+      continue;
+    }
+    summary.matched++;
+  }
+  return { issues, summary };
+}
+
+function totalsCheck(txns, sets) {
+  const mt = txns.filter(t => t.timestamp && t.timestamp.startsWith(MONTH));
+  const ms = sets.filter(s => s.settlement_date && s.settlement_date.startsWith(MONTH));
+  const txnTotal = mt.reduce((a, t) => a + parseFloat(t.amount || 0), 0);
+  const setTotal = ms.reduce((a, s) => a + parseFloat(s.settled_amount || 0), 0);
+  return { txnTotal, setTotal, diff: txnTotal - setTotal };
+}
+
+function inr(v) {
+  if (v === null || v === undefined) return '—';
+  return '₹' + Math.abs(parseFloat(v)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+const badgeCfg = {
+  NEXT_MONTH_SETTLEMENT: ['badge-blue',   'Next month'],
+  ROUNDING_DIFFERENCE:   ['badge-amber',  'Rounding'],
+  DUPLICATE_SETTLEMENT:  ['badge-red',    'Duplicate'],
+  PHANTOM_REFUND:        ['badge-indigo', 'Phantom refund'],
+  MISSING_SETTLEMENT:    ['badge-gray',   'Missing'],
+};
+
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+
+function renderResults(txns, sets) {
+  const { issues, summary } = reconcile(txns, sets);
+  const totals = totalsCheck(txns, sets);
+
+  document.getElementById('emptyState').classList.add('hidden');
+  document.getElementById('periodTag').textContent = MONTH;
+  document.getElementById('statusDot').classList.add('live');
+  show('statsGrid'); show('totalsRow'); show('tableSection'); show('assumptionsBox');
+
+  const matchPct = summary.total_transactions > 0
+    ? Math.round((summary.matched / summary.total_transactions) * 100) : 0;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat"><span class="stat-label">Transactions</span><span class="stat-value blue">${summary.total_transactions}</span><span class="stat-caption">platform records</span></div>
+    <div class="stat"><span class="stat-label">Settlements</span><span class="stat-value blue">${summary.total_settlements}</span><span class="stat-caption">bank records</span></div>
+    <div class="stat">
+      <span class="stat-label">Matched</span><span class="stat-value green">${summary.matched}</span>
+      <span class="stat-caption">${matchPct}% reconciled</span>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:${matchPct}%;background:var(--green);"></div></div>
+    </div>
+    <div class="stat"><span class="stat-label">Next month</span><span class="stat-value amber">${summary.next_month_settlement}</span><span class="stat-caption">timing gap</span></div>
+    <div class="stat"><span class="stat-label">Rounding</span><span class="stat-value amber">${summary.rounding_differences}</span><span class="stat-caption">amount mismatch</span></div>
+    <div class="stat"><span class="stat-label">Duplicates</span><span class="stat-value red">${summary.duplicate_settlements}</span><span class="stat-caption">double settled</span></div>
+    <div class="stat"><span class="stat-label">Phantom refunds</span><span class="stat-value indigo">${summary.phantom_refunds}</span><span class="stat-caption">no original TXN</span></div>
+    <div class="stat"><span class="stat-label">Total gaps</span><span class="stat-value ${issues.length === 0 ? 'green' : 'red'}">${issues.length}</span><span class="stat-caption">${issues.length === 0 ? 'books balance' : 'issues found'}</span></div>
+  `;
+
+  const dc = Math.abs(totals.diff) < 0.01 ? 'good' : 'bad';
+  document.getElementById('totalsRow').innerHTML = `
+    <div class="total-block"><div class="total-label">March txn total</div><div class="total-value">₹${totals.txnTotal.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
+    <div class="divider" style="margin:0 4px;"></div>
+    <div class="total-block"><div class="total-label">March settlement total</div><div class="total-value">₹${totals.setTotal.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
+    <div class="divider" style="margin:0 4px;"></div>
+    <div class="total-block">
+      <div class="total-label">Difference</div>
+      <div class="total-value" style="margin-bottom:4px;">₹${Math.abs(totals.diff).toLocaleString('en-IN',{minimumFractionDigits:4,maximumFractionDigits:4})}</div>
+      <span class="diff-badge ${dc}">${totals.diff >= 0 ? '+' : '−'} ${inr(totals.diff)}</span>
+    </div>
+  `;
+
+  document.getElementById('issueCount').textContent = `${issues.length} issue${issues.length !== 1 ? 's' : ''}`;
+  const tbody = document.getElementById('issuesBody');
+  if (issues.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--green);padding:2rem;font-family:var(--mono);font-size:12px;">No gaps found — books balance</td></tr>`;
+  } else {
+    tbody.innerHTML = issues.map((iss, i) => {
+      const [cls, label] = badgeCfg[iss.gap_type] || ['badge-gray', iss.gap_type];
+      return `<tr>
+        <td class="mono" style="color:var(--text-muted)">${String(i+1).padStart(2,'0')}</td>
+        <td><span class="badge ${cls}">${label}</span></td>
+        <td class="mono" style="color:var(--text-primary)">${iss.transaction_id}</td>
+        <td class="mono">${inr(iss.txn_amount)}</td>
+        <td class="mono" style="${iss.settled_amount < 0 ? 'color:var(--red)' : ''}">${inr(iss.settled_amount)}</td>
+        <td style="color:var(--text-muted);font-size:12px;">${iss.detail}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('assumptionsBox').innerHTML = `
+    <div class="assumptions-title">Assumptions</div>
+    <ul>
+      <li>Reconciliation period is March 2025 (2025-03-xx)</li>
+      <li>Settlement 1–2 days after transaction is normal; April date = next-month gap</li>
+      <li>Amount difference ≤ ₹0.10 classified as rounding; larger = real mismatch</li>
+      <li>Settlement referencing unknown TXN ID with negative amount = phantom refund</li>
+      <li>Same transaction ID in more than one settlement row = duplicate entry</li>
+    </ul>`;
+}
+
+function runFromFiles() {
+  const tf = document.getElementById('txnFile').files[0];
+  const sf = document.getElementById('setFile').files[0];
+  if (!tf || !sf) { alert('Please select both CSV files.'); return; }
+  let td, sd;
+  const r1 = new FileReader(), r2 = new FileReader();
+  r1.onload = e => { td = parseCSV(e.target.result); if (sd) renderResults(td, sd); };
+  r2.onload = e => { sd = parseCSV(e.target.result); if (td) renderResults(td, sd); };
+  r1.readAsText(tf); r2.readAsText(sf);
+}
+
+function loadDemo() {
+  const txnCSV = `transaction_id,amount,currency,timestamp,customer_id,status,note
+TXN1001,1200.00,INR,2025-03-03 09:00:00,C101,completed,
+TXN1002,3400.50,INR,2025-03-05 11:30:00,C102,completed,
+TXN1003,850.75,INR,2025-03-07 14:00:00,C103,completed,
+TXN1004,5000.00,INR,2025-03-10 10:00:00,C104,completed,
+TXN1005,720.00,INR,2025-03-12 16:00:00,C105,completed,
+TXN_GAP1,3500.00,INR,2025-03-30 22:00:00,C106,completed,GAP1_NEXT_MONTH
+TXN_GAP2,999.995,INR,2025-03-08 10:00:00,C107,completed,GAP2_ROUNDING
+TXN_GAP3,2200.00,INR,2025-03-11 09:00:00,C108,completed,GAP3_DUPLICATE
+TXN_GAP4,750.00,INR,2025-03-15 10:00:00,C109,completed,GAP4_BASE`;
+  const setCSV = `settlement_id,transaction_id,settled_amount,settlement_date,status,note
+SET001,TXN1001,1200.00,2025-03-04,settled,
+SET002,TXN1002,3400.50,2025-03-06,settled,
+SET003,TXN1003,850.75,2025-03-08,settled,
+SET004,TXN1004,5000.00,2025-03-11,settled,
+SET005,TXN1005,720.00,2025-03-13,settled,
+SET_G1,TXN_GAP1,3500.00,2025-04-02,settled,GAP1
+SET_G2,TXN_GAP2,1000.00,2025-03-09,settled,GAP2_ROUNDING
+SET_G3A,TXN_GAP3,2200.00,2025-03-12,settled,GAP3_ORIG
+SET_G3B,TXN_GAP3,2200.00,2025-03-12,settled,GAP3_DUP
+SET_G4,TXN_GAP4,750.00,2025-03-16,settled,
+SET_REFUND,TXN_PHANTOM,-500.00,2025-03-20,refund,GAP4_PHANTOM`;
+  renderResults(parseCSV(txnCSV), parseCSV(setCSV));
+}
+</script>
+</body>
+</html>

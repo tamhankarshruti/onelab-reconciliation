@@ -1,0 +1,54 @@
+{
+  "assumptions": [
+    "Reconciliation period: March 2025 (2025-03-xx)",
+    "Settlement within 1-2 days is normal; April settlement date = next-month gap",
+    "Amount difference \u2264 \u20b90.10 is classified as rounding; larger = real mismatch",
+    "A settlement_id with no matching transaction_id and negative amount = phantom refund",
+    "A transaction_id appearing in >1 settlement row = duplicate settlement"
+  ],
+  "summary": {
+    "total_transactions": 24,
+    "total_settlements": 26,
+    "matched": 23,
+    "next_month_settlement": 1,
+    "rounding_differences": 0,
+    "duplicate_settlements": 1,
+    "phantom_refunds": 1
+  },
+  "totals_check": {
+    "march_transaction_total": 100811.91,
+    "march_settlement_total": 99011.91,
+    "difference": 1800.0,
+    "match": false
+  },
+  "issues": [
+    {
+      "gap_type": "DUPLICATE_SETTLEMENT",
+      "transaction_id": "TXN1023",
+      "detail": "2 settlement entries for the same transaction",
+      "settlement_ids": [
+        "SET5023",
+        "SET5024"
+      ],
+      "amounts": [
+        2200.0,
+        2200.0
+      ]
+    },
+    {
+      "gap_type": "PHANTOM_REFUND",
+      "transaction_id": "TXN_PHANTOM_99",
+      "settlement_id": "SET_REFUND_99",
+      "settled_amount": -500.0,
+      "detail": "Refund has no matching original transaction"
+    },
+    {
+      "gap_type": "NEXT_MONTH_SETTLEMENT",
+      "transaction_id": "TXN1021",
+      "settlement_id": "SET5021",
+      "txn_timestamp": "2025-03-29 11:00:00",
+      "settlement_date": "2025-04-02",
+      "detail": "Transaction was recorded in March but settled in April"
+    }
+  ]
+}
